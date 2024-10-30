@@ -1,178 +1,157 @@
-"use strict";
+self.importScripts('/assets/localforage-1.10.0.min.js');
 
-self.importScripts('/localforage-1.10.0.min.js');
+// UPDATED: 11/16/2023
 
-const BACKGROUND_SEARCH_QUERY_TAG = 'background-search-query';
-const NEXT_LAUNCH_QUERY_RESULTS_TAG = 'next-launch-query-results';
-const BACKGROUND_MOVIE_DETAILS_TAG = 'background-movie-details';
-const NEXT_LAUNCH_MOVIE_DETAILS_TAG = 'next-launch-movie-details';
+const VERSION = 'v12';
+const CACHE_NAME = `devtools-tips-${VERSION}`;
 
-const CACHE_NAME = 'my-movie-list-v3';
+const PERIODIC_UPDATE_SUPPORTED = ('periodicSync' in registration);
 
+// Static resources to cache initially.
 const INITIAL_CACHED_RESOURCES = [
-    '/',
-    '/index.html',
-    '/style.css',
-    '/favicon.svg',
-    '/missing-image.jpg',
-    '/script.js',
-    '/localforage-1.10.0.min.js',
-    '/offline-request-response.json',
+  '/',
+  '/offline/',
+  '/assets/style.css',
+  '/assets/dialog-lightbox.js',
+  '/pagefind/pagefind-ui.js',
+  '/assets/logo-small.png',
+  'https://unpkg.com/prismjs@1.20.0/themes/prism-okaidia.css',
+  '/assets/localforage-1.10.0.min.js'
 ];
 
+// Cached resources that match the following strings should not be periodically updated.
+// They are assumed to almost never change. So the periodic update should not worry about them.
+// Everything else, we try to update on a regular basis, to make sure lists of tips get updated.
+const DONT_UPDATE_RESOURCES = [
+  '/offline/',
+  'prismjs',
+  'localforage'
+];
+
+// Use the activate event to delete old caches and avoid running out of space.
+self.addEventListener('activate', (event) => {
+  event.waitUntil((async () => {
+    const names = await caches.keys();
+    await Promise.all(names.map(name => {
+      if (name !== CACHE_NAME) {
+        return caches.delete(name);
+      }
+    }));
+  })());
+});
+
+// Use the install event to pre-cache all initial resources.
 self.addEventListener('install', event => {
-    event.waitUntil((async () => {
-        const cache = await caches.open(CACHE_NAME);
-        cache.addAll(INITIAL_CACHED_RESOURCES);
-    })());
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    cache.addAll(INITIAL_CACHED_RESOURCES);
+  })());
 });
 
-self.addEventListener('activate', function (event) {
-    console.log('Claiming control');
-    return self.clients.claim();
-});
-
-async function searchForMovies(query, dontTryLater) {
-    let error = false;
-    let response = null;
-
-    try {
-        response = await fetch(`https://neighborly-airy-agate.glitch.me/api/movies/${query}`);
-        if (response.status !== 200) {
-            error = true;
-        }
-    } catch (e) {
-        error = true;
-    }
-
-    if (error && !dontTryLater) {
-        requestBackgroundSyncForSearchQuery(query);
-        const cache = await caches.open(CACHE_NAME);
-        response = await cache.match('/offline-request-response.json');
-    }
-
-    return response;
-}
-
-async function getMovieDetails(id, dontTryLater) {
-    let error = false;
-    let response = null;
-
-    try {
-        response = await fetch(`https://neighborly-airy-agate.glitch.me/api/movie/${id}`);
-        if (response.status !== 200) {
-            error = true;
-        }
-    } catch (e) {
-        error = true;
-    }
-
-    if (error && !dontTryLater) {
-        requestBackgroundSyncForMovieDetails(id);
-        const cache = await caches.open(CACHE_NAME);
-        response = await cache.match('/offline-request-response.json');
-    }
-
-    return response;
-}
-
-function requestBackgroundSyncForSearchQuery(query) {
-    if (!self.registration.sync) {
-        return;
-    }
-
-    // We're offline. register a Background Sync to do the query again later when online.
-    self.registration.sync.register(BACKGROUND_SEARCH_QUERY_TAG);
-    // Remember the search query so we can do it later.
-    localforage.setItem(BACKGROUND_SEARCH_QUERY_TAG, query);
-}
-
-function requestBackgroundSyncForMovieDetails(id) {
-    if (!self.registration.sync) {
-        return;
-    }
-
-    // We're offline. register a Background Sync to do the query again later when online.
-    self.registration.sync.register(BACKGROUND_MOVIE_DETAILS_TAG);
-    // Remember the id so we can do it later.
-    localforage.setItem(BACKGROUND_MOVIE_DETAILS_TAG, id);
-}
-
+// On fetch, we have a network-first strategy, where we look for resources on the network first
+// and only fall back to the cache if the network fails.
 self.addEventListener('fetch', event => {
-    const url = new URL(event.request.url);
-    const query = url.searchParams.get('s');
-    const id = url.searchParams.get('i');
+  event.respondWith((async () => {
+    const cache = await caches.open(CACHE_NAME);
 
-    if (url.pathname === '/search' && query) {
-        event.respondWith(searchForMovies(query));
-    }
+    try {
+      const fetchResponse = await fetch(event.request);
+      if (!event.request.url.includes('pixel.php') && !event.request.url.includes('browser-sync')) {
+        // Save the new resource in the cache (responses are streams, so we need to clone in order to use it here).
+        cache.put(event.request, fetchResponse.clone());
+      }
 
-    if (url.pathname === '/details' && id) {
-        event.respondWith(getMovieDetails(id));
+      // And return it.
+      return fetchResponse;
+    } catch (e) {
+      // Fetching didn't work, try the cache.
+      const cachedResponse = await cache.match(event.request);
+      if (cachedResponse) {
+        return cachedResponse;
+      } else if (event.request.mode === 'navigate') {
+        // Couldn't find anything in the cache, and this is a request to a page, let's go to the error page.
+        await rememberRequestedTip(event.request.url);
+        const errorResponse = await cache.match('/offline/');
+        return errorResponse;
+      }
     }
+  })());
 });
 
-// Network is back up, we're being awaken, let's do the requests we were trying to do before if any.
+async function rememberRequestedTip(url) {
+  let tips = await localforage.getItem('bg-tips');
+  if (!tips) {
+    tips = [];
+  }
+
+  tips.push(url);
+  await localforage.setItem('bg-tips', tips);
+}
+
+// Listen to background sync events to load requested tips that couldn't be retrieved when offline.
 self.addEventListener('sync', event => {
-    // Check if we had a movie search query to do.
-    if (event.tag === BACKGROUND_SEARCH_QUERY_TAG) {
-        event.waitUntil((async () => {
-            // Get the query we were trying to do before.
-            const query = await localforage.getItem(BACKGROUND_SEARCH_QUERY_TAG);
-            if (!query) {
-                return;
-            }
-            await localforage.removeItem(BACKGROUND_SEARCH_QUERY_TAG);
-
-            const response = await searchForMovies(query, true);
-            const data = await response.json();
-
-            // Store the results for the next time the user opens the app. The frontend will use it to
-            // populate the page.
-            await localforage.setItem(NEXT_LAUNCH_QUERY_RESULTS_TAG, data.Search);
-
-            // Let the user know, if they granted permissions before.
-            self.registration.showNotification(`Your search for "${query}" is now ready`, {
-                icon: '/favicon.svg',
-                body: 'You can access the list of movies in the app',
-                actions: [
-                    {
-                        action: 'view-results',
-                        title: 'Open app'
-                    }
-                ]
-            });
-        })());
-    }
-
-    // Check if we had a movie details request to do.
-    if (event.tag === BACKGROUND_MOVIE_DETAILS_TAG) {
-        event.waitUntil((async () => {
-            // Get the id we were trying to get details about before.
-            const id = await localforage.getItem(BACKGROUND_MOVIE_DETAILS_TAG);
-            if (!id) {
-                return;
-            }
-            await localforage.removeItem(BACKGROUND_MOVIE_DETAILS_TAG);
-
-            const response = await getMovieDetails(id, true);
-            const data = await response.json();
-
-            // Store the results for the next time the user opens the app. The frontend will use it to
-            // populate the details section.
-            await localforage.setItem(NEXT_LAUNCH_MOVIE_DETAILS_TAG, data);
-
-            // Let the user know, if they granted permissions before.
-            self.registration.showNotification(`Movie details are now ready`, {
-                icon: "/favicon.svg",
-                body: "You can access the details in the app",
-                actions: [
-                    {
-                        action: 'view-details',
-                        title: 'Open app'
-                    }
-                ]
-            });
-        })());
-    }
+  if (event.tag === 'bg-load-tip') {
+    event.waitUntil(backgroundSyncLoadTips());
+  }
 });
+
+// Fetch the requested tips now, and put them in cache.
+async function backgroundSyncLoadTips() {
+  const tips = await localforage.getItem('bg-tips');
+  if (!tips || !tips.length) {
+    return;
+  }
+
+  // Fetch and cache each tip.
+  const cache = await caches.open(CACHE_NAME);
+  await cache.addAll(tips);
+
+  // Re-engage user with a notification.
+  registration.showNotification(`${tips.length} DevTools Tips was/were loaded in the background and is/are ready`, {
+    icon: "/assets/logo-192.png",
+    body: "View the tip",
+    data: tips[0]
+  });
+
+  await localforage.removeItem('bg-tips');
+}
+
+self.addEventListener('notificationclick', event => {
+  // assuming only one type of notification right now
+  event.notification.close();
+  clients.openWindow(event.notification.data);
+});
+
+// Listen the periodic background sync events to update the cached resources.
+self.addEventListener('periodicsync', event => {
+  if (event.tag === 'update-cached-content') {
+    event.waitUntil(updateCachedContent());
+  }
+});
+
+async function updateCachedContent() {
+  const requests = await findCacheEntriesToBeRefreshed();
+  const cache = await caches.open(CACHE_NAME);
+
+  for (const request of requests) {
+    try {
+      // Fetch the new version.
+      const fetchResponse = await fetch(request);
+      // Refresh the cache.
+      await cache.put(request, fetchResponse.clone());
+    } catch (e) {
+      // Fail silently, we'll just keep whatever we already had in the cache.
+    }
+  }
+}
+
+// Find the entries that are already cached and that we want to periodically update.
+// There are some resources we never want to bother with updating.
+// They can always be force-updated by updating the CACHE version.
+async function findCacheEntriesToBeRefreshed() {
+  const cache = await caches.open(CACHE_NAME);
+  const requests = await cache.keys();
+  return requests.filter(request => {
+    return !DONT_UPDATE_RESOURCES.some(pattern => request.url.includes(pattern));
+  });
+}
