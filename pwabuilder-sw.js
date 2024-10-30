@@ -90,3 +90,13 @@ self.addEventListener('fetch', event => {
     )
   }
 })
+
+
+async function registerPeriodicSync() {
+  const swRegistration = await navigator.serviceWorker.ready;
+  swRegistration.periodicSync.register("update-news", {
+    // try to update every 24 hours
+    minInterval: 24 * 60 * 60 * 1000,
+  });
+}
+
