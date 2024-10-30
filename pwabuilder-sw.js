@@ -1,195 +1,131 @@
-// This optional code is used to register a service worker.
-// register() is not called by default.
+/* ===========================================================
+ * docsify sw.js
+ * ===========================================================
+ * Copyright 2016 @huxpro
+ * Licensed under Apache 2.0
+ * Register service worker.
+ * ========================================================== */
 
-// This lets the app load faster on subsequent visits in production, and gives
-// it offline capabilities. However, it also means that developers (and users)
-// will only see deployed updates on subsequent visits to a page, after all the
-// existing tabs open on the page have been closed, since previously cached
-// resources are updated in the background.
+const RUNTIME = 'docsify';
+const HOSTNAME_WHITELIST = [
+  self.location.hostname,
+  'fonts.gstatic.com',
+  'fonts.googleapis.com',
+  'cdn.jsdelivr.net'
+];
+const NETWORK_TIMEOUT_MS = 500;
 
-// To learn more about the benefits of this model and instructions on how to
-// opt-in, read https://bit.ly/CRA-PWA
+// The Util Function to hack URLs of intercepted requests
+const getFixedUrl = (req) => {
+  var now = Date.now();
+  var url = new URL(req.url);
 
+  // Fixed http URL and add cache-busting
+  url.protocol = self.location.protocol;
+  if (url.hostname === self.location.hostname) {
+    url.search += (url.search ? '&' : '?') + 'cache-bust=' + now;
+  }
+  return url.href;
+};
 
-import {toast} from 'react-toastify';
-import InfoIcon from "./assets/svg/InfoIcon"
+// Activate event for Service Worker
+self.addEventListener('activate', event => {
+  event.waitUntil(self.clients.claim());
+});
 
+// Install event to pre-cache resources for offline support
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(RUNTIME).then(cache => {
+      return cache.addAll([
+        '/', // Cache the main page
+        '/index.html',
+        '/styles.css', // Example static resources
+        '/scripts.js',
+        '/icons/icon-192x192.png',
+        '/icons/icon-512x512.png'
+      ]);
+    })
+  );
+});
 
-const isLocalhost = Boolean(
-    window.location.hostname === 'localhost' ||
-    // [::1] is the IPv6 localhost address.
-    window.location.hostname === '[::1]' ||
-    // 127.0.0.0/8 are considered localhost for IPv4.
-    window.location.hostname.match(
-        /^127(?:\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$/
-    )
-);
+// Fetch event with stale-while-revalidate strategy
+self.addEventListener('fetch', event => {
+  if (HOSTNAME_WHITELIST.indexOf(new URL(event.request.url).hostname) > -1) {
+    const cached = caches.match(event.request);
+    const fixedUrl = getFixedUrl(event.request);
+    const fetched = fetch(fixedUrl, { cache: 'no-store' });
+    const fetchedCopy = fetched.then(resp => resp.clone());
 
-export function register(config) {
-    if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {
-        // The URL constructor is available in all browsers that support SW.
-        const publicUrl = new URL(process.env.PUBLIC_URL, window.location.href);
-        if (publicUrl.origin !== window.location.origin) {
-            // Our service worker won't work if PUBLIC_URL is on a different origin
-            // from what our page is served on. This might happen if a CDN is used to
-            // serve assets; see https://github.com/facebook/create-react-app/issues/2374
-            return;
-        }
-
-        window.addEventListener('load', () => {
-            const swUrl = `/worker.js`;
-            console.log("swUrl", swUrl)
-
-            if (isLocalhost) {
-                // This is running on localhost. Let's check if a service worker still exists or not.
-                checkValidServiceWorker(swUrl, config);
-
-                // Add some additional logging to localhost, pointing developers to the
-                // service worker/PWA documentation.
-                navigator.serviceWorker.ready.then(() => {
-                    console.log(
-                        'This web app is being served cache-first by a service ' +
-                        'worker. To learn more, visit https://bit.ly/CRA-PWA'
-                    );
-                });
-
-                // // Then later, request a one-off sync:
-                // navigator.serviceWorker.ready.then(function (swRegistration) {
-                //     return swRegistration.sync.register('myFirstSync');
-                // });
-
-            } else {
-                // Is not localhost. Just register service worker
-                registerValidSW(swUrl, config);
-            }
-            let refreshing = false;
-
-            // detect controller change and refresh the page
-            navigator.serviceWorker.addEventListener('controllerchange', () => {
-                if (!refreshing) {
-                    window.location.reload(true)
-                    refreshing = true
-                }
-            })
-        });
-
-    }
-}
-
-function invokeServiceWorkerUpdateFlow(registration) {
-    var pjson = require('../package.json');
-    console.log(pjson.version);
-    toast.info(`Application services improved ${pjson.version} `, {
-        toastId: "appUpdateAvailable", // Prevent duplicate toasts
-        onClick: () => {
-            if (registration.waiting) {
-                // let waiting Service Worker know it should became active
-                registration.waiting.postMessage('SKIP_WAITING')
-            }
-        }, // Closes windows on click
-        autoClose: false,// Prevents toast from auto closing
-        icon: <InfoIcon />
+    const delayCacheResponse = new Promise((resolve) => {
+      setTimeout(resolve, NETWORK_TIMEOUT_MS, cached);
     });
 
+    event.respondWith(
+      Promise.race([fetched.catch(() => cached), delayCacheResponse])
+        .then(resp => resp || fetched)
+        .catch(() => caches.match('/offline.html'))
+    );
+
+    event.waitUntil(
+      Promise.all([fetchedCopy, caches.open(RUNTIME)])
+        .then(([response, cache]) => response.ok && cache.put(event.request, response))
+        .catch(() => { /* eat any errors */ })
+    );
+  }
+});
+
+// Background Sync for retrying failed requests
+self.addEventListener('sync', event => {
+  if (event.tag === 'sync-failed-requests') {
+    event.waitUntil(retryFailedRequests());
+  }
+});
+
+// Function to retry failed requests (placeholder)
+async function retryFailedRequests() {
+  console.log('Retrying failed requests');
+  // Here you can handle specific failed requests that need to be retried.
 }
 
-function registerValidSW(swUrl, config) {
-    navigator.serviceWorker
-        .register(swUrl)
-        .then(registration => {
-            // Check for updates at start.
-            registration.update();
-            // Check for updates every min.
-            setInterval(() => {
-                registration.update();
-            }, (1000 * 60));
+// Periodic Sync for refreshing data
+self.addEventListener('periodicsync', event => {
+  if (event.tag === 'refresh-content') {
+    event.waitUntil(fetchAndUpdateContent());
+  }
+});
 
-            // ensure the case when the updatefound event was missed is also handled
-            // by re-invoking the prompt when there's a waiting Service Worker
-            if (registration.waiting) {
-                invokeServiceWorkerUpdateFlow(registration)
-            }
-
-            // detect Service Worker update available and wait for it to become installed
-            registration.onupdatefound = () => {
-                const installingWorker = registration.installing;
-                if (installingWorker == null) {
-                    return;
-                }
-                // wait until the new Service worker is actually installed (ready to take over)
-                installingWorker.onstatechange = () => {
-                    if (registration.waiting) {
-                        if (navigator.serviceWorker.controller) {
-                            // if there's an existing controller (previous Service Worker), show the prompt
-                            invokeServiceWorkerUpdateFlow(registration)
-                            console.log(
-                                'New assets is available and will be used when all ' +
-                                'tabs for this page are closed. See https://bit.ly/CRA-PWA'
-                            );
-
-                            // Execute callback
-                            if (config && config.onUpdate) {
-                                config.onUpdate(registration);
-                            }
-                        } else {
-                            // At this point, everything has been precached.
-                            // It's the perfect time to display a
-                            // "Index is cached for offline use." message.
-                            console.log('Index is cached for offline use.');
-
-                            // Execute callback
-                            if (config && config.onSuccess) {
-                                console.log("if (config && config.onSuccess) {")
-                                config.onSuccess(registration);
-                            }
-                        }
-                    }
-                };
-            };
-        })
-        .catch(error => {
-            console.error('Error during service worker registration:', error);
-        });
+// Fetch and update content periodically (placeholder)
+async function fetchAndUpdateContent() {
+  console.log('Fetching and updating content for periodic sync');
+  // Implement content fetching and cache update logic here.
 }
 
-function checkValidServiceWorker(swUrl, config) {
-    // Check if the service worker can be found. If it can't reload the page.
-    fetch(swUrl, {
-        headers: {'Service-Worker': 'script'},
+// Push Notifications
+self.addEventListener('push', event => {
+  const data = event.data ? event.data.json() : {};
+  const options = {
+    body: data.body || 'You have a new notification!',
+    icon: '/icons/icon-192x192.png',
+    badge: '/icons/icon-192x192.png'
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(data.title || 'New Notification', options)
+  );
+});
+
+// Notification click event to handle notification interaction
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  event.waitUntil(
+    clients.matchAll({ type: 'window' }).then(windowClients => {
+      const matchingClient = windowClients.find(client => client.url === '/' && 'focus' in client);
+      if (matchingClient) {
+        return matchingClient.focus();
+      } else if (clients.openWindow) {
+        return clients.openWindow('/');
+      }
     })
-        .then(response => {
-            // Ensure service worker exists, and that we really are getting a JS file.
-            const contentType = response.headers.get('content-type');
-            if (
-                response.status === 404 ||
-                (contentType != null && contentType.indexOf('javascript') === -1)
-            ) {
-                // No service worker found. Probably a different app. Reload the page.
-                navigator.serviceWorker.ready.then(registration => {
-                    registration.unregister().then(() => {
-                        window.location.reload();
-                    });
-                });
-            } else {
-                // Service worker found. Proceed as normal.
-                registerValidSW(swUrl, config);
-            }
-        })
-        .catch(() => {
-            console.log(
-                'No internet connection found. App is running in offline mode.'
-            );
-        });
-}
-
-export function unregister() {
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.ready
-            .then(registration => {
-                registration.unregister();
-            })
-            .catch(error => {
-                console.error(error.message);
-            });
-    }
-}
+  );
+});
