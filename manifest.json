@@ -28,9 +28,12 @@
     }
   ],
   "prefer_related_applications": false,
-  "categories": ["education", "productivity"],
-  "lang": "en",
-  "dir": "ltr",
+  "categories": [
+    "games",
+    "music"
+  ],
+  "lang": "fa",
+  "dir": "auto",
   "screenshots": [
     {
       "src": "screenshot1.png",
@@ -57,5 +60,17 @@
         }
       ]
     }
-  ]
+  ],
+  "id": "TRVBPIOS",
+  "display_override": [
+    "browser",
+    "fullscreen",
+    "minimal-ui",
+    "standalone",
+    "window-controls-overlay"
+  ],
+  "iarc_rating_id": "RTJUPIS",
+  "edge_side_panel": {
+    "preferred_width": 1
+  }
 }
