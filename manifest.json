@@ -1,7 +1,7 @@
 {
-  "name": "ACEApp",
-  "short_name": "PWA App",
-  "description": "A simple Progressive Web App example",
+  "name": "MojtabAce",
+  "short_name": "MyAce",
+  "description": "Best App",
   "start_url": "/index.html",
   "display": "browser",
   "background_color": "#f4f4f9",
@@ -19,12 +19,15 @@
     }
   ],
   "lang": "fa",
-  "orientation": "any",
+  "orientation": "landscape",
   "display_override": [
-    "fullscreen",
     "standalone",
     "minimal-ui",
-    "window-controls-overlay",
-    "browser"
-  ]
+    "window-controls-overlay"
+  ],
+  "id": "A320520023150",
+  "dir": "rtl",
+  "edge_side_panel": {
+    "preferred_width": 1
+  }
 }
