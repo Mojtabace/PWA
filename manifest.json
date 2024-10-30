@@ -72,5 +72,11 @@
   "iarc_rating_id": "RTJUPIS",
   "edge_side_panel": {
     "preferred_width": 1
-  }
+  },
+  "protocol_handlers": [
+    {
+      "protocol": "web+myapp",
+      "url": "/?data=%s"
+    }
+  ]
 }
