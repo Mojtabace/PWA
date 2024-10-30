@@ -21,13 +21,19 @@
   "lang": "fa",
   "orientation": "landscape",
   "display_override": [
-    "standalone",
     "minimal-ui",
-    "window-controls-overlay"
+    "window-controls-overlay",
+    "browser",
+    "fullscreen"
   ],
   "id": "FSDFSDFDSG",
   "dir": "rtl",
   "edge_side_panel": {
     "preferred_width": 1
-  }
+  },
+  "iarc_rating_id": "12",
+  "prefer_related_applications": false,
+  "categories": [
+    "music"
+  ]
 }
