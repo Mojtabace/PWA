@@ -29,9 +29,21 @@
         }
     </script>
     <script>
-        if (typeof navigator.serviceWorker !== 'undefined') {
-          navigator.serviceWorker.register('pwabuilder-sw.js')
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('pwabuilder-sw.js', {
+        scope: '/'
+      }).then(reg => {
+        if (reg.installing) {
+          console.log('Service worker installing');
+        } else if (reg.waiting) {
+          console.log('Service worker installed');
+        } else if (reg.active) {
+          console.log('Service worker active');
         }
-    </script>
+      }).catch(e => {
+        console.log('Registration failed with ' + e);
+      });
+    }
+  </script>
 </body>
 </html>
