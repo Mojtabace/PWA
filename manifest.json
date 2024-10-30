@@ -1,11 +1,13 @@
 {
-  "name": "MojtabAce",
-  "short_name": "MyAce",
-  "description": "Best App",
+  "name": "My PWA App",
+  "short_name": "MyApp",
+  "description": "An example of a Progressive Web Application using manifest.json.",
   "start_url": "/index.html",
-  "display": "browser",
-  "background_color": "#f4f4f9",
-  "theme_color": "#4a90e2",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#6200EE",
   "icons": [
     {
       "src": "icon-192x192.png",
@@ -18,22 +20,42 @@
       "type": "image/png"
     }
   ],
-  "lang": "fa",
-  "orientation": "landscape",
-  "display_override": [
-    "minimal-ui",
-    "window-controls-overlay",
-    "browser",
-    "fullscreen"
+  "related_applications": [
+    {
+      "platform": "play",
+      "url": "https://play.google.com/store/apps/details?id=com.example.myapp",
+      "id": "com.example.myapp"
+    }
   ],
-  "id": "FSDFSDFDSG",
-  "dir": "rtl",
-  "edge_side_panel": {
-    "preferred_width": 1
-  },
-  "iarc_rating_id": "12",
   "prefer_related_applications": false,
-  "categories": [
-    "music"
+  "categories": ["education", "productivity"],
+  "lang": "en",
+  "dir": "ltr",
+  "screenshots": [
+    {
+      "src": "/screenshots/screenshot1.png",
+      "sizes": "640x480",
+      "type": "image/png"
+    },
+    {
+      "src": "/screenshots/screenshot2.png",
+      "sizes": "1280x720",
+      "type": "image/png"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Open Dashboard",
+      "short_name": "Dashboard",
+      "description": "Quick access to the Dashboard",
+      "url": "/dashboard",
+      "icons": [
+        {
+          "src": "/icons/shortcut-icon.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
+      ]
+    }
   ]
 }
