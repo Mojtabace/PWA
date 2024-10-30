@@ -1,102 +1,195 @@
-/* ===========================================================
- * docsify sw.js
- * ===========================================================
- * Copyright 2016 @huxpro
- * Licensed under Apache 2.0
- * Register service worker.
- * ========================================================== */
+// This optional code is used to register a service worker.
+// register() is not called by default.
 
-const RUNTIME = 'docsify'
-const HOSTNAME_WHITELIST = [
-  self.location.hostname,
-  'fonts.gstatic.com',
-  'fonts.googleapis.com',
-  'cdn.jsdelivr.net'
-]
-const NETWORK_TIMEOUT_MS = 500
+// This lets the app load faster on subsequent visits in production, and gives
+// it offline capabilities. However, it also means that developers (and users)
+// will only see deployed updates on subsequent visits to a page, after all the
+// existing tabs open on the page have been closed, since previously cached
+// resources are updated in the background.
 
-// The Util Function to hack URLs of intercepted requests
-const getFixedUrl = (req) => {
-  var now = Date.now()
-  var url = new URL(req.url)
+// To learn more about the benefits of this model and instructions on how to
+// opt-in, read https://bit.ly/CRA-PWA
 
-  // 1. fixed http URL
-  // Just keep syncing with location.protocol
-  // fetch(httpURL) belongs to active mixed content.
-  // And fetch(httpRequest) is not supported yet.
-  url.protocol = self.location.protocol
 
-  // 2. add query for caching-busting.
-  // Github Pages served with Cache-Control: max-age=600
-  // max-age on mutable content is error-prone, with SW life of bugs can even extend.
-  // Until cache mode of Fetch API landed, we have to workaround cache-busting with query string.
-  // Cache-Control-Bug: https://bugs.chromium.org/p/chromium/issues/detail?id=453190
-  if (url.hostname === self.location.hostname) {
-    url.search += (url.search ? '&' : '?') + 'cache-bust=' + now
-  }
-  return url.href
+import {toast} from 'react-toastify';
+import InfoIcon from "./assets/svg/InfoIcon"
+
+
+const isLocalhost = Boolean(
+    window.location.hostname === 'localhost' ||
+    // [::1] is the IPv6 localhost address.
+    window.location.hostname === '[::1]' ||
+    // 127.0.0.0/8 are considered localhost for IPv4.
+    window.location.hostname.match(
+        /^127(?:\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$/
+    )
+);
+
+export function register(config) {
+    if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {
+        // The URL constructor is available in all browsers that support SW.
+        const publicUrl = new URL(process.env.PUBLIC_URL, window.location.href);
+        if (publicUrl.origin !== window.location.origin) {
+            // Our service worker won't work if PUBLIC_URL is on a different origin
+            // from what our page is served on. This might happen if a CDN is used to
+            // serve assets; see https://github.com/facebook/create-react-app/issues/2374
+            return;
+        }
+
+        window.addEventListener('load', () => {
+            const swUrl = `/worker.js`;
+            console.log("swUrl", swUrl)
+
+            if (isLocalhost) {
+                // This is running on localhost. Let's check if a service worker still exists or not.
+                checkValidServiceWorker(swUrl, config);
+
+                // Add some additional logging to localhost, pointing developers to the
+                // service worker/PWA documentation.
+                navigator.serviceWorker.ready.then(() => {
+                    console.log(
+                        'This web app is being served cache-first by a service ' +
+                        'worker. To learn more, visit https://bit.ly/CRA-PWA'
+                    );
+                });
+
+                // // Then later, request a one-off sync:
+                // navigator.serviceWorker.ready.then(function (swRegistration) {
+                //     return swRegistration.sync.register('myFirstSync');
+                // });
+
+            } else {
+                // Is not localhost. Just register service worker
+                registerValidSW(swUrl, config);
+            }
+            let refreshing = false;
+
+            // detect controller change and refresh the page
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!refreshing) {
+                    window.location.reload(true)
+                    refreshing = true
+                }
+            })
+        });
+
+    }
 }
 
-/**
- *  @Lifecycle Activate
- *  New one activated when old isnt being used.
- *
- *  waitUntil(): activating ====> activated
- */
-self.addEventListener('activate', event => {
-  event.waitUntil(self.clients.claim())
-})
+function invokeServiceWorkerUpdateFlow(registration) {
+    var pjson = require('../package.json');
+    console.log(pjson.version);
+    toast.info(`Application services improved ${pjson.version} `, {
+        toastId: "appUpdateAvailable", // Prevent duplicate toasts
+        onClick: () => {
+            if (registration.waiting) {
+                // let waiting Service Worker know it should became active
+                registration.waiting.postMessage('SKIP_WAITING')
+            }
+        }, // Closes windows on click
+        autoClose: false,// Prevents toast from auto closing
+        icon: <InfoIcon />
+    });
 
-/**
- *  @Functional Fetch
- *  All network requests are being intercepted here.
- *
- *  void respondWith(Promise<Response> r)
- */
-self.addEventListener('fetch', event => {
-  // Skip some of cross-origin requests, like those for Google Analytics.
-  if (HOSTNAME_WHITELIST.indexOf(new URL(event.request.url).hostname) > -1) {
-    // Stale-while-revalidate
-    // similar to HTTP's stale-while-revalidate: https://www.mnot.net/blog/2007/12/12/stale
-    // Upgrade from Jake's to Surma's: https://gist.github.com/surma/eb441223daaedf880801ad80006389f1
-    const cached = caches.match(event.request)
-    const fixedUrl = getFixedUrl(event.request)
-    const fetched = fetch(fixedUrl, { cache: 'no-store' })
-    const fetchedCopy = fetched.then(resp => resp.clone())
+}
 
-    // Call respondWith() with whatever we get first.
-    // If the fetch fails (e.g disconnected), wait for the cache.
-    // If there’s nothing in cache, wait for the fetch.
-    // If neither yields a response, return offline pages.
+function registerValidSW(swUrl, config) {
+    navigator.serviceWorker
+        .register(swUrl)
+        .then(registration => {
+            // Check for updates at start.
+            registration.update();
+            // Check for updates every min.
+            setInterval(() => {
+                registration.update();
+            }, (1000 * 60));
 
-    // Updated 2/7/2023 by @zteutsch. Switched from pure race between cache and network to a half second (500 ms) timeout
-    // before going to cache. All fallbacks should still work and cache will be updated in the background.
+            // ensure the case when the updatefound event was missed is also handled
+            // by re-invoking the prompt when there's a waiting Service Worker
+            if (registration.waiting) {
+                invokeServiceWorkerUpdateFlow(registration)
+            }
 
-    const delayCacheResponse = new Promise((resolve) => {
-      setTimeout(resolve, NETWORK_TIMEOUT_MS, cached);
+            // detect Service Worker update available and wait for it to become installed
+            registration.onupdatefound = () => {
+                const installingWorker = registration.installing;
+                if (installingWorker == null) {
+                    return;
+                }
+                // wait until the new Service worker is actually installed (ready to take over)
+                installingWorker.onstatechange = () => {
+                    if (registration.waiting) {
+                        if (navigator.serviceWorker.controller) {
+                            // if there's an existing controller (previous Service Worker), show the prompt
+                            invokeServiceWorkerUpdateFlow(registration)
+                            console.log(
+                                'New assets is available and will be used when all ' +
+                                'tabs for this page are closed. See https://bit.ly/CRA-PWA'
+                            );
+
+                            // Execute callback
+                            if (config && config.onUpdate) {
+                                config.onUpdate(registration);
+                            }
+                        } else {
+                            // At this point, everything has been precached.
+                            // It's the perfect time to display a
+                            // "Index is cached for offline use." message.
+                            console.log('Index is cached for offline use.');
+
+                            // Execute callback
+                            if (config && config.onSuccess) {
+                                console.log("if (config && config.onSuccess) {")
+                                config.onSuccess(registration);
+                            }
+                        }
+                    }
+                };
+            };
+        })
+        .catch(error => {
+            console.error('Error during service worker registration:', error);
+        });
+}
+
+function checkValidServiceWorker(swUrl, config) {
+    // Check if the service worker can be found. If it can't reload the page.
+    fetch(swUrl, {
+        headers: {'Service-Worker': 'script'},
     })
-
-    event.respondWith(
-      Promise.race([fetched.catch(_ => cached), delayCacheResponse])
-        .then(resp => resp || fetched)
-        .catch(_ => { /* eat any errors */ })
-    )
-
-    // Update the cache with the version we fetched (only for ok status)
-    event.waitUntil(
-      Promise.all([fetchedCopy, caches.open(RUNTIME)])
-        .then(([response, cache]) => response.ok && cache.put(event.request, response))
-        .catch(_ => { /* eat any errors */ })
-    )
-  }
-})
-
-
-async function registerPeriodicSync() {
-  const swRegistration = await navigator.serviceWorker.ready;
-  swRegistration.periodicSync.register("update-news", {
-    // try to update every 24 hours
-    minInterval: 24 * 60 * 60 * 1000,
-  });
+        .then(response => {
+            // Ensure service worker exists, and that we really are getting a JS file.
+            const contentType = response.headers.get('content-type');
+            if (
+                response.status === 404 ||
+                (contentType != null && contentType.indexOf('javascript') === -1)
+            ) {
+                // No service worker found. Probably a different app. Reload the page.
+                navigator.serviceWorker.ready.then(registration => {
+                    registration.unregister().then(() => {
+                        window.location.reload();
+                    });
+                });
+            } else {
+                // Service worker found. Proceed as normal.
+                registerValidSW(swUrl, config);
+            }
+        })
+        .catch(() => {
+            console.log(
+                'No internet connection found. App is running in offline mode.'
+            );
+        });
 }
 
+export function unregister() {
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready
+            .then(registration => {
+                registration.unregister();
+            })
+            .catch(error => {
+                console.error(error.message);
+            });
+    }
+}
