@@ -88,5 +88,35 @@
         "application/pdf": [".pdf"]
       }
     }
+  ],
+  "widgets": [
+    {
+      "name": "Weather Widget",
+      "description": "Displays current weather information",
+      "src": "/widgets/weather-widget.html",
+      "icon": {
+        "src": "widget-icon.png",
+        "sizes": "48x48",
+        "type": "image/png"
+      },
+      "dimensions": {
+        "width": 300,
+        "height": 200
+      }
+    },
+    {
+      "name": "Task List Widget",
+      "description": "Shows a quick view of your task list",
+      "src": "/widgets/task-list-widget.html",
+      "icon": {
+        "src": "task-icon.png",
+        "sizes": "48x48",
+        "type": "image/png"
+      },
+      "dimensions": {
+        "width": 200,
+        "height": 150
+      }
+    }
   ]
 }
