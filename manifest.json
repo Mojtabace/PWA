@@ -78,5 +78,15 @@
       "protocol": "web+myapp",
       "url": "/?data=%s"
     }
+  ],
+  "file_handlers": [
+    {
+      "action": "/open-file",
+      "accept": {
+        "image/*": [".jpg", ".jpeg", ".png"],
+        "text/plain": [".txt"],
+        "application/pdf": [".pdf"]
+      }
+    }
   ]
 }
