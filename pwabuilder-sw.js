@@ -1,60 +1,160 @@
-importScripts(
-    'https://storage.googleapis.com/workbox-cdn/releases/6.5.4/workbox-sw.js'
+importScripts("https://storage.googleapis.com/workbox-cdn/releases/6.2.0/workbox-sw.js");
+
+
+workbox.setConfig({ debug: true });
+
+
+const {
+
+    routing: { registerRoute, setCatchHandler },
+
+    strategies: { CacheFirst, NetworkFirst, StaleWhileRevalidate },
+
+    cacheableResponse: { CacheableResponse, CacheableResponsePlugin },
+
+    expiration: { ExpirationPlugin, CacheExpiration },
+
+    precaching: { matchPrecache, precacheAndRoute },
+
+} = workbox;
+
+
+precacheAndRoute([{ url: "/offline.html", revision: null }]);
+
+
+// Cache page navigations (html) with a Network First strategy
+
+registerRoute(
+
+    ({ request }) => request.mode === "navigate",
+
+    new NetworkFirst({
+
+        cacheName: "pages",
+
+        plugins: [
+
+            new CacheableResponsePlugin({
+
+                statuses: [200],
+
+            }),
+
+        ],
+
+    })
+
 );
 
-// This is your Service Worker, you can put any of your custom Service Worker
-// code in this file, above the `precacheAndRoute` line.
 
-// When widget is installed/pinned, push initial state.
-self.addEventListener('widgetinstall', (event) => {
-    event.waitUntil(updateWidget(event));
+// Cache Google Fonts
+
+registerRoute(
+
+    ({ url }) =>
+
+        url.origin === "https://fonts.googleapis.com" ||
+
+        url.origin === "https://fonts.gstatic.com",
+
+    new StaleWhileRevalidate({
+
+        cacheName: "pwa-google-fonts",
+
+        plugins: [new ExpirationPlugin({ maxEntries: 20 })],
+
+    })
+
+);
+
+
+// Cache Images
+
+registerRoute(
+
+    ({ request }) => request.destination === "image",
+
+    new CacheFirst({
+
+        cacheName: "pwa-images",
+
+        plugins: [
+
+            new CacheableResponsePlugin({
+
+                statuses: [0, 200],
+
+            }),
+
+            new ExpirationPlugin({
+
+                maxEntries: 60,
+
+                maxAgeSeconds: 30 * 24 * 60 * 60, // 30 Days
+
+            }),
+
+        ],
+
+    })
+
+);
+
+
+// Cache CSS, JS, Manifest, and Web Worker
+
+registerRoute(
+
+    ({ request }) =>
+
+        request.destination === "script" ||
+
+        request.destination === "style" ||
+
+        request.destination === "manifest" ||
+
+        request.destination === "worker",
+
+    new StaleWhileRevalidate({
+
+        cacheName: "pwa-static-assets",
+
+        plugins: [
+
+            new CacheableResponsePlugin({
+
+                statuses: [0, 200],
+
+            }),
+
+            new ExpirationPlugin({
+
+                maxEntries: 32,
+
+                maxAgeSeconds: 24 * 60 * 60, // 24 hours
+
+            }),
+
+        ],
+
+    })
+
+);
+
+
+// Catch routing errors, like if the user is offline
+
+setCatchHandler(async ({ event }) => {
+
+    // Return the precached offline page if a document is being requested
+
+    if (event.request.destination === "document") {
+
+        return matchPrecache("/offline.html");
+
+    }
+
+
+    return Response.error();
+
 });
-
-// When widget is shown, update content to ensure it is up-to-date.
-self.addEventListener('widgetresume', (event) => {
-    event.waitUntil(updateWidget(event));
-});
-
-// When the user clicks an element with an associated Action.Execute,
-// handle according to the 'verb' in event.action.
-self.addEventListener('widgetclick', (event) => {
-if (event.action == "updateName") {
-    event.waitUntil(updateName(event));
-}
-});
-
-// When the widget is uninstalled/unpinned, clean up any unnecessary
-// periodic sync or widget-related state.
-self.addEventListener('widgetuninstall', (event) => {});
-
-const updateWidget = async (event) => {
-// The widget definition represents the fields specified in the manifest.
-    const widgetDefinition = event.widget.definition;
-
-    // Fetch the template and data defined in the manifest to generate the payload.
-    const payload = {
-        template: JSON.stringify(await (await fetch(widgetDefinition.msAcTemplate)).json()),
-        data: JSON.stringify(await (await fetch(widgetDefinition.data)).json()),
-    };
-
-    // Push payload to widget.
-    await self.widgets.updateByInstanceId(event.instanceId, payload);
-}
-
-const updateName = async (event) => {
-    const name = event.data.json().name;
-
-    // The widget definition represents the fields specified in the manifest.
-    const widgetDefinition = event.widget.definition;
-
-    // Fetch the template and data defined in the manifest to generate the payload.
-    const payload = {
-        template: JSON.stringify(await (await fetch(widgetDefinition.msAcTemplate)).json()),
-        data: JSON.stringify({name}),
-    };
-
-    // Push payload to widget.
-    await self.widgets.updateByInstanceId(event.instanceId, payload);
-}
-
-workbox.precaching.precacheAndRoute(self.__WB_MANIFEST || []);
