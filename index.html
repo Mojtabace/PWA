@@ -54,12 +54,18 @@
         } else {
           console.log('Periodic background sync is not supported.');
         }
-      }  
-
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("pwabuilder-sw.js");
-}
-            
+      }              
     </script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.onload = () => {
+        navigator.serviceWorker.register(
+          '/pwabuilder-sw.js'
+        );
+      }
+    }
+  </script>    
+    
 </body>
 </html>
