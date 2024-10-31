@@ -2,12 +2,25 @@
   "name": "My PWA App",
   "short_name": "MyApp",
   "description": "An example of a Progressive Web Application using manifest.json.",
+  "id": "TRVBPIOS",
+  "lang": "fa",
+  "dir": "auto",
+  
   "start_url": "/index.html",
   "scope": "/",
   "display": "standalone",
+  "display_override": [
+    "browser",
+    "fullscreen",
+    "minimal-ui",
+    "standalone",
+    "window-controls-overlay"
+  ],
   "orientation": "portrait",
+  
   "background_color": "#ffffff",
   "theme_color": "#6200EE",
+
   "icons": [
     {
       "src": "icon-192x192.png",
@@ -20,20 +33,7 @@
       "type": "image/png"
     }
   ],
-  "related_applications": [
-    {
-      "platform": "play",
-      "url": "https://play.google.com/store/apps/details?id=com.example.myapp",
-      "id": "com.example.myapp"
-    }
-  ],
-  "prefer_related_applications": false,
-  "categories": [
-    "games",
-    "music"
-  ],
-  "lang": "fa",
-  "dir": "auto",
+
   "screenshots": [
     {
       "src": "screenshot1.png",
@@ -46,6 +46,12 @@
       "type": "image/png"
     }
   ],
+
+  "categories": [
+    "games",
+    "music"
+  ],
+
   "shortcuts": [
     {
       "name": "Open Dashboard",
@@ -61,24 +67,23 @@
       ]
     }
   ],
-  "id": "TRVBPIOS",
-  "display_override": [
-    "browser",
-    "fullscreen",
-    "minimal-ui",
-    "standalone",
-    "window-controls-overlay"
+
+  "related_applications": [
+    {
+      "platform": "play",
+      "url": "https://play.google.com/store/apps/details?id=com.example.myapp",
+      "id": "com.example.myapp"
+    }
   ],
-  "iarc_rating_id": "RTJUPIS",
-  "edge_side_panel": {
-    "preferred_width": 1
-  },
+  "prefer_related_applications": false,
+
   "protocol_handlers": [
     {
       "protocol": "web+myapp",
       "url": "/?data=%s"
     }
   ],
+
   "file_handlers": [
     {
       "action": "/open-file",
@@ -89,6 +94,7 @@
       }
     }
   ],
+
   "widgets": [
     {
       "name": "Weather Widget",
@@ -105,6 +111,7 @@
       }
     }
   ],
+
   "share_target": {
     "action": "/share-receiver",
     "method": "POST",
@@ -120,5 +127,11 @@
         }
       ]
     }
-  }
+  },
+
+  "edge_side_panel": {
+    "preferred_width": 1
+  },
+
+  "iarc_rating_id": "RTJUPIS"
 }
