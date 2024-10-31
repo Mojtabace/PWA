@@ -1,6 +1,6 @@
 // نام و ورژن کش
 const CACHE_NAME = "my-app-cache-v1";
-const OFFLINE_URL = "/offline.html"; // یک صفحه آفلاین برای نمایش در حالت آفلاین
+const OFFLINE_URL = "offline.html"; // یک صفحه آفلاین برای نمایش در حالت آفلاین
 
 // فایل‌های کش شده
 const FILES_TO_CACHE = [
