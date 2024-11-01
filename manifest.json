@@ -99,7 +99,7 @@
     {
       "name": "Weather Widget",
       "description": "Displays current weather information",
-      "src": "/widgets/weather-widget.html",
+      "src": "widgets.html",
       "icon": {
         "src": "widget-icon.png",
         "sizes": "48x48",
