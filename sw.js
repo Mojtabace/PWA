@@ -57,3 +57,39 @@ self.addEventListener('fetch', (event) => {
       })
   );
 });
+// Listener for Push Notifications
+self.addEventListener('push', function(event) {
+  const options = {
+    body: event.data ? event.data.text() : 'Default body',
+    icon: 'icon-192x192.png', // آیکونی که می‌خواهید نمایش دهید
+    badge: 'badge-icon.png' // آیکون کوچک (اختیاری)
+  };
+
+  event.waitUntil(
+    self.registration.showNotification('Push Notification Title', options)
+  );
+});
+
+// Listener for Background Sync
+self.addEventListener('sync', function(event) {
+  if (event.tag === 'my-background-sync') {
+    event.waitUntil(
+      fetch('/sync-endpoint') // آدرسی که اطلاعات را همگام‌سازی می‌کند
+        .then(response => response.json())
+        .then(data => console.log('Background sync completed', data))
+        .catch(err => console.error('Background sync failed', err))
+    );
+  }
+});
+
+// Listener for Periodic Sync
+self.addEventListener('periodicsync', function(event) {
+  if (event.tag === 'my-periodic-sync') {
+    event.waitUntil(
+      fetch('/periodic-sync-endpoint') // آدرس درخواست برای دوره‌ای همگام‌سازی
+        .then(response => response.json())
+        .then(data => console.log('Periodic sync completed', data))
+        .catch(err => console.error('Periodic sync failed', err))
+    );
+  }
+});
