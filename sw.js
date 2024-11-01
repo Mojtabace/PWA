@@ -4,7 +4,7 @@ importScripts('https://storage.googleapis.com/workbox-cdn/releases/5.1.2/workbox
 const CACHE_NAME = 'pwabuilder-cache';
 const OFFLINE_URL = 'offline.html';
 const WIDGETS = [
-  '/widget.html' // سایر ویجت‌ها را هم می‌توانید اضافه کنید
+  'widget.html' // سایر ویجت‌ها را هم می‌توانید اضافه کنید
 ];
 
 // Preload offline page and widgets
