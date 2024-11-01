@@ -6,7 +6,7 @@
   "lang": "fa",
   "dir": "auto",
   
-  "start_url": "index.html",
+  "start_url": "/index.html",
   "scope": "/",
   "display": "standalone",
   "display_override": [
@@ -17,20 +17,41 @@
     "window-controls-overlay"
   ],
   "orientation": "portrait",
+  
   "background_color": "#ffffff",
   "theme_color": "#6200EE",
 
   "icons": [
-    { "src": "icon-192x192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icon-512x512.png", "sizes": "512x512", "type": "image/png" }
+    {
+      "src": "icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
   ],
 
   "screenshots": [
-    { "src": "screenshot1.png", "sizes": "640x480", "type": "image/png" },
-    { "src": "screenshot2.png", "sizes": "1280x720", "type": "image/png" }
+    {
+      "src": "screenshot1.png",
+      "sizes": "640x480",
+      "type": "image/png"
+    },
+    {
+      "src": "screenshot2.png",
+      "sizes": "1280x720",
+      "type": "image/png"
+    }
   ],
 
-  "categories": ["games", "music"],
+  "categories": [
+    "games",
+    "music"
+  ],
+
   "shortcuts": [
     {
       "name": "Open Dashboard",
@@ -38,7 +59,11 @@
       "description": "Quick access to the Dashboard",
       "url": "/dashboard",
       "icons": [
-        { "src": "shortcut-icon.png", "sizes": "96x96", "type": "image/png" }
+        {
+          "src": "shortcut-icon.png",
+          "sizes": "96x96",
+          "type": "image/png"
+        }
       ]
     }
   ],
@@ -53,7 +78,10 @@
   "prefer_related_applications": false,
 
   "protocol_handlers": [
-    { "protocol": "web+myapp", "url": "/?data=%s" }
+    {
+      "protocol": "web+myapp",
+      "url": "/?data=%s"
+    }
   ],
 
   "file_handlers": [
@@ -67,10 +95,28 @@
     }
   ],
 
-  "handle_links": "all",
+  "share_target": {
+    "action": "/share-receiver",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "shareTitle",
+      "text": "shareText",
+      "url": "shareUrl",
+      "files": [
+        {
+          "name": "sharedFile",
+          "accept": ["image/*", "application/pdf", "text/plain"]
+        }
+      ]
+    }
+  },
+
+  "edge_side_panel": {
+    "preferred_width": 1
+  },
+
   "iarc_rating_id": "RTJUPIS",
 
-  "permissions": ["push", "background-sync", "periodic-background-sync"],
-  "background_color": "#ffffff",
-  "theme_color": "#6200EE"
+  "handle_links": "all"
 }
