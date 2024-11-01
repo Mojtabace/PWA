@@ -2,11 +2,11 @@
 const CACHE_NAME = 'my-pwa-cache-v1';
 const urlsToCache = [
   '/',
-  '/index.html',
-  '/styles.css',
-  '/script.js',
-  '/icon-192x192.png',
-  '/icon-512x512.png'
+  'index.html',
+  'styles.css',
+  'app.js',
+  'icon-192x192.png',
+  'icon-512x512.png'
 ];
 
 // نصب سرویس‌کار و کش کردن فایل‌ها
