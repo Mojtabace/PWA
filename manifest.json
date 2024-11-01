@@ -6,7 +6,7 @@
   "lang": "fa",
   "dir": "auto",
   
-  "start_url": "/index.html",
+  "start_url": "index.html",
   "scope": "/",
   "display": "standalone",
   "display_override": [
@@ -99,7 +99,7 @@
     {
       "name": "Weather Widget",
       "description": "Displays current weather information",
-      "src": "/widgets.html",
+      "src": "widgets.html",
       "icon": {
         "src": "widget-icon.png",
         "sizes": "48x48",
