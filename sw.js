@@ -1,31 +1,59 @@
-// Import Workbox library
-importScripts('https://storage.googleapis.com/workbox-cdn/releases/5.1.2/workbox-sw.js');
-
-const CACHE_NAME = 'pwabuilder-cache';
-const OFFLINE_URL = 'offline.html';
-const WIDGETS = [
-  'widget.html' // سایر ویجت‌ها را هم می‌توانید اضافه کنید
+// نام کش برای ذخیره فایل‌ها
+const CACHE_NAME = 'my-pwa-cache-v1';
+// لیست فایل‌هایی که باید کش شوند
+const CACHE_ASSETS = [
+  '/index.html',
+  '/offline.html',
+  '/widget.html', // فایل ویجت برای دسترسی آفلاین
+  '/styles.css', // فایل‌های CSS اصلی
+  '/app.js',     // فایل اصلی جاوااسکریپت
+  '/icon-192x192.png',
+  '/icon-512x512.png'
 ];
 
-// Preload offline page and widgets
+// رویداد نصب برای اضافه کردن فایل‌ها به کش
 self.addEventListener('install', (event) => {
+  console.log('Service Worker installing.');
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll([OFFLINE_URL, ...WIDGETS]);
+    caches.open(CACHE_NAME)
+      .then((cache) => {
+        console.log('Caching app assets');
+        return cache.addAll(CACHE_ASSETS);
+      })
+      .catch((err) => console.error('Error caching assets:', err))
+  );
+});
+
+// رویداد فعال‌سازی برای حذف کش‌های قدیمی
+self.addEventListener('activate', (event) => {
+  console.log('Service Worker activating.');
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cache) => {
+          if (cache !== CACHE_NAME) {
+            console.log('Deleting old cache:', cache);
+            return caches.delete(cache);
+          }
+        })
+      );
     })
   );
 });
 
-// Enable navigation preload
-if (workbox.navigationPreload.isSupported()) {
-  workbox.navigationPreload.enable();
-}
-
-// Fetch event handler
+// رویداد دریافت برای پاسخ‌دهی از کش و هندل کردن حالت آفلاین
 self.addEventListener('fetch', (event) => {
+  console.log('Fetch event for:', event.request.url);
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      return response || fetch(event.request).catch(() => caches.match(OFFLINE_URL));
-    })
+    caches.match(event.request)
+      .then((response) => {
+        // اگر در کش موجود است، پاسخ از کش
+        if (response) {
+          return response;
+        }
+        // اگر در کش موجود نیست، درخواست از شبکه
+        return fetch(event.request)
+          .catch(() => caches.match('/offline.html')); // نمایش صفحه آفلاین در صورت عدم دسترسی به شبکه
+      })
   );
 });
