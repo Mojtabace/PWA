@@ -1,11 +1,9 @@
-function showAlert() {
-    alert("Hello! Welcome to my PWA.");
-}
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", function() {
-    navigator.serviceWorker
-      .register("serviceWorker.js")
-      .then(res => console.log("service worker registered"))
-      .catch(err => console.log("service worker not registered", err));
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/service-worker.js')
+  .then(function(registration) {
+    console.log('Service Worker registered with scope:', registration.scope);
+  })
+  .catch(function(error) {
+    console.log('Service Worker registration failed:', error);
   });
 }
