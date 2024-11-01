@@ -133,5 +133,7 @@
     "preferred_width": 1
   },
 
-  "iarc_rating_id": "RTJUPIS"
+  "iarc_rating_id": "RTJUPIS",
+
+  "handle_links": "all"
 }
