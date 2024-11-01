@@ -6,7 +6,7 @@
   "lang": "fa",
   "dir": "auto",
   
-  "start_url": "index.html",
+  "start_url": "/index.html",
   "scope": "/",
   "display": "standalone",
   "display_override": [
@@ -97,18 +97,47 @@
 
   "widgets": [
     {
-      "name": "Weather Widget",
-      "description": "Displays current weather information",
-      "src": "widgets.html",
-      "icon": {
-        "src": "widget-icon.png",
-        "sizes": "48x48",
-        "type": "image/png"
-      },
-      "dimensions": {
-        "width": 300,
-        "height": 200
-      }
+      "name": "PWAmp mini player",
+      "short_name": "PWAmp",
+      "description": "Widget to control the PWAmp player",
+      "tag": "pwamp",
+      "ms_ac_template": "widgets/mini-player.json",
+      "data": "widgets/mini-player-data.json",
+      "screenshots": [
+        {
+          "src": "./screenshot-widget.png",
+          "sizes": "600x400",
+          "label": "The PWAmp mini-player widget"
+        }
+      ],
+      "icons": [
+        {
+          "src": "./favicon-48.png",
+          "sizes": "48x48"
+        },
+        {
+          "src": "./favicon-96.png",
+          "sizes": "96x96"
+        },
+        {
+          "src": "./favicon-128.png",
+          "sizes": "128x128"
+        },
+        {
+          "src": "./favicon-256.png",
+          "sizes": "256x256"
+        },
+        {
+          "src": "./favicon-512.png",
+          "sizes": "512x512"
+        }
+      ],
+      "backgrounds": [
+        {
+          "src": "./widgets/background.png",
+          "sizes": "600x400"
+        }
+      ]
     }
   ],
 
