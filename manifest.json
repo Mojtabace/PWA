@@ -95,23 +95,6 @@
     }
   ],
 
-  "widgets": [
-    {
-      "name": "Weather Widget",
-      "description": "Displays current weather information",
-      "src": "widgets.html",
-      "icon": {
-        "src": "widget-icon.png",
-        "sizes": "48x48",
-        "type": "image/png"
-      },
-      "dimensions": {
-        "width": 300,
-        "height": 200
-      }
-    }
-  ],
-
   "share_target": {
     "action": "/share-receiver",
     "method": "POST",
