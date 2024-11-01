@@ -1,34 +1,39 @@
-// کش کردن فایل‌ها برای استفاده آفلاین
+// نام کش برای ذخیره فایل‌ها
 const CACHE_NAME = 'my-pwa-cache-v1';
-const urlsToCache = [
-  '/',
-  'index.html',
-  'styles.css',
-  'app.js',
-  'icon-192x192.png',
-  'icon-512x512.png'
+// لیست فایل‌هایی که باید کش شوند
+const CACHE_ASSETS = [
+  '/index.html',
+  '/offline.html',
+  '/weather-widget.html', // فایل ویجت برای دسترسی آفلاین
+  '/styles.css', // فایل‌های CSS اصلی
+  '/app.js',     // فایل اصلی جاوااسکریپت
+  '/icon-192x192.png',
+  '/icon-512x512.png'
 ];
 
-// نصب سرویس‌کار و کش کردن فایل‌ها
+// رویداد نصب برای اضافه کردن فایل‌ها به کش
 self.addEventListener('install', (event) => {
+  console.log('Service Worker installing.');
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('Opened cache');
-        return cache.addAll(urlsToCache);
+        console.log('Caching app assets');
+        return cache.addAll(CACHE_ASSETS);
       })
+      .catch((err) => console.error('Error caching assets:', err))
   );
 });
 
-// فعال‌سازی و حذف کش‌های قدیمی
+// رویداد فعال‌سازی برای حذف کش‌های قدیمی
 self.addEventListener('activate', (event) => {
+  console.log('Service Worker activating.');
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('Old cache removed:', cacheName);
-            return caches.delete(cacheName);
+        cacheNames.map((cache) => {
+          if (cache !== CACHE_NAME) {
+            console.log('Deleting old cache:', cache);
+            return caches.delete(cache);
           }
         })
       );
@@ -36,62 +41,19 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// واکشی منابع از کش و شبکه
+// رویداد دریافت برای پاسخ‌دهی از کش و هندل کردن حالت آفلاین
 self.addEventListener('fetch', (event) => {
+  console.log('Fetch event for:', event.request.url);
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
-        return response || fetch(event.request);
+        // اگر در کش موجود است، پاسخ از کش
+        if (response) {
+          return response;
+        }
+        // اگر در کش موجود نیست، درخواست از شبکه
+        return fetch(event.request)
+          .catch(() => caches.match('/offline.html')); // نمایش صفحه آفلاین در صورت عدم دسترسی به شبکه
       })
-  );
-});
-
-// نمایش نوتیفیکیشن در هنگام دریافت پیام پوش
-self.addEventListener('push', (event) => {
-  const options = {
-    body: event.data ? event.data.text() : 'You have a new notification!',
-    icon: 'icon-192x192.png',
-    badge: 'icon-96x96.png'
-  };
-  
-  event.waitUntil(
-    self.registration.showNotification('Push Notification Title', options)
-  );
-});
-
-// همگام‌سازی پس‌زمینه
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'my-background-sync') {
-    event.waitUntil(
-      fetch('/sync-endpoint')
-        .then(response => response.json())
-        .then(data => console.log('Background sync completed:', data))
-        .catch(error => console.error('Background sync failed:', error))
-    );
-  }
-});
-
-// همگام‌سازی دوره‌ای
-self.addEventListener('periodicsync', (event) => {
-  if (event.tag === 'my-periodic-sync') {
-    event.waitUntil(
-      fetch('/periodic-sync-endpoint')
-        .then(response => response.json())
-        .then(data => console.log('Periodic sync completed:', data))
-        .catch(error => console.error('Periodic sync failed:', error))
-    );
-  }
-});
-
-// هندل کردن بسته شدن نوتیفیکیشن‌ها
-self.addEventListener('notificationclose', (event) => {
-  console.log('Notification was closed', event.notification);
-});
-
-// هندل کردن کلیک روی نوتیفیکیشن‌ها
-self.addEventListener('notificationclick', (event) => {
-  event.notification.close();
-  event.waitUntil(
-    clients.openWindow('/')
   );
 });
