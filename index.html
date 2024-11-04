@@ -184,5 +184,39 @@
             });
         }
     </script>
+    <script>
+    // کد Swiper و تنظیمات اولیه برای هر دسته
+    categories.forEach(category => {
+        category.swiper = new Swiper(`#${category.elementId}`, {
+            slidesPerView: 3,
+            slidesPerGroup: 3,
+            spaceBetween: 10,
+            lazy: true,
+            speed: 500,
+            scrollbar: {
+                el: '.swiper-scrollbar',
+                draggable: true,
+            },
+            on: {
+                slideChange: () => {
+                    const lastVisibleSlide = category.swiper.activeIndex + category.swiper.params.slidesPerView >= category.swiper.slides.length;
+                    if (lastVisibleSlide && !category.isLoading) {
+                        loadPosts(category);
+                    }
+                }
+            }
+        });
+
+        loadPosts(category);
+    });
+
+    // اضافه کردن رویداد resize برای مقداردهی مجدد Swiper در تغییر اندازه صفحه
+    window.addEventListener('resize', () => {
+        categories.forEach(category => {
+            category.swiper.update();
+        });
+    });
+</script>
+
 </body>
 </html>
