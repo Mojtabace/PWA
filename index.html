@@ -2,10 +2,11 @@
 <html lang="fa">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>پروژه PWA</title>
-    <link rel="stylesheet" href="swiper-bundle.min.css">
-	<link rel="manifest" href="manifest.json">
+    <!-- بارگذاری Swiper از CDN معتبر -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper/swiper-bundle.min.css">
+    <link rel="manifest" href="https://bayanbox.ir/download/7321105045550220936/manifest.json">
     <style>
         body {
             background-color: #1c1c1c;
@@ -64,7 +65,8 @@
         </div>
     </div>
 
-    <script src="swiper-bundle.min.js"></script>
+    <!-- بارگذاری Swiper از CDN معتبر -->
+    <script src="https://cdn.jsdelivr.net/npm/swiper/swiper-bundle.min.js"></script>
     <script>
         const categories = [
             { id: 1, container: 'postsContainerHorror', swiper: null, elementId: 'swiperHorror', page: 1, isLoading: false },
@@ -89,6 +91,8 @@
                     } else {
                         category.isLoading = true;
                     }
+                } else {
+                    console.error("خطا در دریافت پست‌ها:", response.status);
                 }
             } catch (error) {
                 console.error("خطا در بارگذاری پست‌ها:", error);
@@ -112,7 +116,7 @@
             const fragment = document.createDocumentFragment();
 
             for (const post of posts) {
-                if (!post.featured_media) continue; // عبور از پست‌هایی که تصویر ندارند
+                if (!post.featured_media) continue;
 
                 const slide = document.createElement('div');
                 slide.classList.add('swiper-slide');
@@ -159,6 +163,19 @@
             loadPosts(category);
         });
     </script>
-<script src="app.js"></script>
+    
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('https://bayanbox.ir/download/2514176036142585151/service-worker.js')
+                    .then((registration) => {
+                        console.log('Service Worker registered with scope:', registration.scope);
+                    })
+                    .catch((error) => {
+                        console.error('Service Worker registration failed:', error);
+                    });
+            });
+        }
+    </script>
 </body>
 </html>
