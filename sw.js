@@ -2,13 +2,13 @@
 const CACHE_NAME = 'my-pwa-cache-v1';
 // لیست فایل‌هایی که باید کش شوند
 const CACHE_ASSETS = [
-  '/index.html',
-  '/offline.html',
-  '/weather-widget.html', // فایل ویجت برای دسترسی آفلاین
-  '/styles.css', // فایل‌های CSS اصلی
-  '/app.js',     // فایل اصلی جاوااسکریپت
-  '/icon-192x192.png',
-  '/icon-512x512.png'
+  'index.html',
+  'offline.html',
+  'weather-widget.html', // فایل ویجت برای دسترسی آفلاین
+  'styles.css', // فایل‌های CSS اصلی
+  'app.js',     // فایل اصلی جاوااسکریپت
+  'icon-192x192.png',
+  'icon-512x512.png'
 ];
 
 // رویداد نصب برای اضافه کردن فایل‌ها به کش
