@@ -5,69 +5,165 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PWA برای سایت وردپرسی</title>
 
-    <!-- متا تگ‌های مورد نیاز PWA -->
-    <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#4CAF50">
-    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
-    <meta name="apple-mobile-web-app-capable" content="yes">
 
-    <!-- CSS اصلی -->
-    <link rel="stylesheet" href="styles.css">
+    <!-- لینک به فایل manifest برای پشتیبانی از نصب اپلیکیشن -->
+
+    <link rel="manifest" href="manifest.json">
+
+
+    <style>
+        body {
+            background-color: #1c1c1c;
+            color: white;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            direction: rtl;
+            margin: 0;
+            scroll-behavior: smooth;
+        }
+        .category-container {
+            margin: 20px 0;
+        }
+        .swiper-container {
+            width: 100%;
+            height: 250px;
+        }
+        .swiper-slide {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #333;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.5s ease;
+        }
+        img {
+            width: 100%;
+            height: auto;
+            loading: lazy;
+        }
+    </style>
 </head>
 <body>
-    <div class="app-container">
-        <header>
-            <h1>محتوای سایت وردپرسی</h1>
-        </header>
-        <main>
-            <div id="posts-container" class="posts-container">
-                <!-- محتوا از طریق JavaScript و fetch اضافه می‌شود -->
-            </div>
-        </main>
-        <footer>
-            <p>&copy; 2024 تمامی حقوق محفوظ است</p>
-        </footer>
+    <div class="category-container">
+        <h2>ترسناک</h2>
+        <div class="swiper-container" id="swiperHorror">
+            <div class="swiper-wrapper" id="postsContainerHorror"></div>
+            <div class="swiper-scrollbar"></div>
+        </div>
     </div>
 
-    <!-- اسکریپت جاوااسکریپت برای واکشی اطلاعات از وردپرس -->
+    <div class="category-container">
+        <h2>کمدی</h2>
+        <div class="swiper-container" id="swiperComedy">
+            <div class="swiper-wrapper" id="postsContainerComedy"></div>
+            <div class="swiper-scrollbar"></div>
+        </div>
+    </div>
+
+    <div class="category-container">
+        <h2>درام</h2>
+        <div class="swiper-container" id="swiperDrama">
+            <div class="swiper-wrapper" id="postsContainerDrama"></div>
+            <div class="swiper-scrollbar"></div>
+        </div>
+    </div>
+
+    <script src="swiper-bundle.min.js"></script>
     <script>
-        // واکشی پست‌ها از API وردپرس
-        async function fetchPosts() {
+        const categories = [
+            { id: 1, container: 'postsContainerHorror', swiper: null, elementId: 'swiperHorror', page: 1, isLoading: false },
+            { id: 2, container: 'postsContainerComedy', swiper: null, elementId: 'swiperComedy', page: 1, isLoading: false },
+            { id: 5, container: 'postsContainerDrama', swiper: null, elementId: 'swiperDrama', page: 1, isLoading: false }
+        ];
+
+        const postsPerPage = 4;
+        const imageCache = {};
+
+        async function loadPosts(category) {
+            if (category.isLoading) return;
+            category.isLoading = true;
+
             try {
-                const response = await fetch('https://mim-movie.ir/wp-json/wp/v2/posts');
-                const posts = await response.json();
-                const postsContainer = document.getElementById('posts-container');
-                
-                posts.forEach(post => {
-                    const postElement = document.createElement('div');
-                    postElement.classList.add('post');
-
-                    // عنوان و محتوای پست را نمایش می‌دهیم
-                    postElement.innerHTML = `
-                        <h2>${post.title.rendered}</h2>
-                        <p>${post.excerpt.rendered}</p>
-                        <a href="${post.link}" target="_blank">ادامه مطلب</a>
-                    `;
-                    postsContainer.appendChild(postElement);
-                });
+                const response = await fetch(`https://upmedia.movie/wp-json/wp/v2/posts?categories=${category.id}&page=${category.page}&per_page=${postsPerPage}`);
+                if (response.ok) {
+                    const posts = await response.json();
+                    if (posts.length) {
+                        await appendImages(posts, category);
+                        category.page++;
+                    } else {
+                        category.isLoading = true;
+                    }
+                }
             } catch (error) {
-                console.error('مشکلی در واکشی اطلاعات پیش آمد', error);
+                console.error("خطا در بارگذاری پست‌ها:", error);
             }
+            category.isLoading = false;
         }
 
-        // صدا زدن تابع واکشی
-        fetchPosts();
-    </script>
+        async function fetchFeaturedImage(mediaId) {
+            if (imageCache[mediaId]) return imageCache[mediaId];
+            const response = await fetch(`https://upmedia.movie/wp-json/wp/v2/media/${mediaId}`);
+            if (!response.ok) throw new Error('خطا در دریافت تصویر');
 
-    <!-- اسکریپت ثبت سرویس ورکر -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js')
-                .then(reg => console.log('Service Worker registered', reg))
-                .catch(err => console.error('Service Worker registration failed', err));
+            const media = await response.json();
+            const imageUrl = media.source_url;
+            imageCache[mediaId] = imageUrl;
+            return imageUrl;
+        }
+
+        async function appendImages(posts, category) {
+            const postsContainer = document.getElementById(category.container);
+            const fragment = document.createDocumentFragment();
+
+            for (const post of posts) {
+                if (!post.featured_media) continue; // عبور از پست‌هایی که تصویر ندارند
+
+                const slide = document.createElement('div');
+                slide.classList.add('swiper-slide');
+
+                try {
+                    const imgSrc = await fetchFeaturedImage(post.featured_media);
+                    if (imgSrc) {
+                        const img = document.createElement('img');
+                        img.src = imgSrc;
+                        img.alt = "Post Image";
+                        img.loading = "lazy";
+                        slide.appendChild(img);
+                        fragment.appendChild(slide);
+                    }
+                } catch (error) {
+                    console.error("خطا در دریافت تصویر:", error);
+                }
+            }
+            postsContainer.appendChild(fragment);
+            category.swiper.update();
+        }
+
+        categories.forEach(category => {
+            category.swiper = new Swiper(`#${category.elementId}`, {
+                slidesPerView: 3,
+                slidesPerGroup: 3,
+                spaceBetween: 10,
+                lazy: true,
+                speed: 500,
+                scrollbar: {
+                    el: '.swiper-scrollbar',
+                    draggable: true,
+                },
+                on: {
+                    slideChange: () => {
+                        const lastVisibleSlide = category.swiper.activeIndex + category.swiper.params.slidesPerView >= category.swiper.slides.length;
+                        if (lastVisibleSlide && !category.isLoading) {
+                            loadPosts(category);
+                        }
+                    }
+                }
             });
-        }
+
+            loadPosts(category);
+        });
     </script>
+<script src="app.js"></script>
 </body>
 </html>
